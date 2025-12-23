@@ -1,5 +1,6 @@
 name: Build docs
 on:
+  pull_request:
   push:
     branches:
     - master
@@ -18,15 +19,14 @@ jobs:
   build-and-deploy:
     if: github.repository == 'lvgl/lvgl'
     runs-on: ubuntu-24.04
-    concurrency: docs-build-and-deploy
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           fetch-depth: 0
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Cache Python packages
@@ -62,7 +62,13 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
       - name: Build examples (with cache)
-        run: scripts/build_html_examples.sh
+        run: |
+          # Grab the current name in case the LVGL folder is not called lvgl
+          # as it could be the case if this is running from a fork
+          LVGL_FOLDER=$(pwd)
+          # Move to the parent folder to fetch emscripten port.
+          cd ..
+          ./lvgl/scripts/build_html_examples.sh --symlink $LVGL_FOLDER
       - name: Build docs
         run: docs/build.py html
       - name: Remove .doctrees
@@ -72,7 +78,8 @@ jobs:
           echo "::set-output name=VERSION_NAME::$(scripts/find_version.sh)"
         id: version
       - name: Deploy to subfolder
-        uses: JamesIves/github-pages-deploy-action@v4.7.3
+        if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release/')) }}
+        uses: JamesIves/github-pages-deploy-action@v4.7.4
         with:
           token: ${{ secrets.LVGL_BOT_TOKEN }}
           repository-name: lvgl/docs
@@ -83,8 +90,8 @@ jobs:
           git-config-email: lvgl-bot@users.noreply.github.com
           single-commit: true
       - name: Deploy to master
-        if: github.ref == 'refs/heads/master'
-        uses: JamesIves/github-pages-deploy-action@v4.7.3
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        uses: JamesIves/github-pages-deploy-action@v4.7.4
         with:
           token: ${{ secrets.LVGL_BOT_TOKEN }}
           repository-name: lvgl/docs

@@ -118,6 +118,20 @@ typedef enum {
     LV_BORDER_SIDE_INTERNAL = 0x10, /**< FOR matrix-like objects (e.g. Button matrix)*/
 } lv_border_side_t;
 
+typedef enum {
+    LV_BLUR_QUALITY_AUTO = 0,   /**< Set the quality automatically */
+    LV_BLUR_QUALITY_SPEED,      /**< Prefer speed over precision */
+    LV_BLUR_QUALITY_PRECISION,  /**< Prefer precision over speed*/
+} lv_blur_quality_t;
+
+/** A image colorkey definition.
+ *  The transparency within the color range of [low, high] will be set to LV_OPA_TRANSP If the "enable" flag is set to true.
+ */
+typedef struct {
+    lv_color_t low;
+    lv_color_t high;
+} lv_image_colorkey_t;
+
 /**
  * A common type to handle all the property types in the same way.
  */
@@ -132,7 +146,7 @@ typedef union {
  *
  * Props are split into groups of 16. When adding a new prop to a group, ensure it does not overflow into the next one.
  */
-enum {
+enum _lv_style_id_t {
     LV_STYLE_PROP_INV               = 0,
 
     /*Group 0*/
@@ -238,48 +252,58 @@ enum {
     LV_STYLE_TEXT_LINE_SPACE        = 92,
     LV_STYLE_TEXT_DECOR             = 93,
     LV_STYLE_TEXT_ALIGN             = 94,
+    LV_STYLE_TEXT_OUTLINE_STROKE_WIDTH = 95,
+    LV_STYLE_TEXT_OUTLINE_STROKE_OPA   = 96,
+    LV_STYLE_TEXT_OUTLINE_STROKE_COLOR = 97,
 
-    LV_STYLE_OPA                    = 95,
-    LV_STYLE_OPA_LAYERED            = 96,
-    LV_STYLE_COLOR_FILTER_DSC       = 97,
-    LV_STYLE_COLOR_FILTER_OPA       = 98,
-    LV_STYLE_ANIM                   = 99,
-    LV_STYLE_ANIM_DURATION          = 100,
-    LV_STYLE_TRANSITION             = 102,
-    LV_STYLE_BLEND_MODE             = 103,
-    LV_STYLE_TRANSFORM_WIDTH        = 104,
-    LV_STYLE_TRANSFORM_HEIGHT       = 105,
-    LV_STYLE_TRANSLATE_X            = 106,
-    LV_STYLE_TRANSLATE_Y            = 107,
-    LV_STYLE_TRANSFORM_SCALE_X      = 108,
-    LV_STYLE_TRANSFORM_SCALE_Y      = 109,
-    LV_STYLE_TRANSFORM_ROTATION     = 110,
-    LV_STYLE_TRANSFORM_PIVOT_X      = 111,
-    LV_STYLE_TRANSFORM_PIVOT_Y      = 112,
-    LV_STYLE_TRANSFORM_SKEW_X       = 113,
-    LV_STYLE_TRANSFORM_SKEW_Y       = 114,
-    LV_STYLE_BITMAP_MASK_SRC        = 115,
-    LV_STYLE_ROTARY_SENSITIVITY     = 116,
-    LV_STYLE_TRANSLATE_RADIAL       = 117,
+    LV_STYLE_OPA                    = 98,
+    LV_STYLE_OPA_LAYERED            = 99,
+    LV_STYLE_COLOR_FILTER_DSC       = 100,
+    LV_STYLE_COLOR_FILTER_OPA       = 101,
+    LV_STYLE_ANIM                   = 102,
+    LV_STYLE_ANIM_DURATION          = 103,
+    LV_STYLE_TRANSITION             = 104,
+    LV_STYLE_BLEND_MODE             = 105,
+    LV_STYLE_TRANSFORM_WIDTH        = 106,
+    LV_STYLE_TRANSFORM_HEIGHT       = 107,
+    LV_STYLE_TRANSLATE_X            = 108,
+    LV_STYLE_TRANSLATE_Y            = 109,
+    LV_STYLE_TRANSFORM_SCALE_X      = 110,
+    LV_STYLE_TRANSFORM_SCALE_Y      = 111,
+    LV_STYLE_TRANSFORM_ROTATION     = 112,
+    LV_STYLE_TRANSFORM_PIVOT_X      = 113,
+    LV_STYLE_TRANSFORM_PIVOT_Y      = 114,
+    LV_STYLE_TRANSFORM_SKEW_X       = 115,
+    LV_STYLE_TRANSFORM_SKEW_Y       = 116,
+    LV_STYLE_BITMAP_MASK_SRC        = 117,
+    LV_STYLE_ROTARY_SENSITIVITY     = 118,
+    LV_STYLE_TRANSLATE_RADIAL       = 119,
+    LV_STYLE_RECOLOR                = 120,
+    LV_STYLE_RECOLOR_OPA            = 121,
 
-    LV_STYLE_FLEX_FLOW              = 125,
-    LV_STYLE_FLEX_MAIN_PLACE        = 126,
-    LV_STYLE_FLEX_CROSS_PLACE       = 127,
-    LV_STYLE_FLEX_TRACK_PLACE       = 128,
-    LV_STYLE_FLEX_GROW              = 129,
+    LV_STYLE_FLEX_FLOW              = 122,
+    LV_STYLE_FLEX_MAIN_PLACE        = 123,
+    LV_STYLE_FLEX_CROSS_PLACE       = 124,
+    LV_STYLE_FLEX_TRACK_PLACE       = 125,
+    LV_STYLE_FLEX_GROW              = 126,
 
-    LV_STYLE_GRID_COLUMN_ALIGN      = 130,
-    LV_STYLE_GRID_ROW_ALIGN         = 131,
-    LV_STYLE_GRID_ROW_DSC_ARRAY     = 132,
-    LV_STYLE_GRID_COLUMN_DSC_ARRAY  = 133,
-    LV_STYLE_GRID_CELL_COLUMN_POS   = 134,
-    LV_STYLE_GRID_CELL_COLUMN_SPAN  = 135,
-    LV_STYLE_GRID_CELL_X_ALIGN      = 136,
-    LV_STYLE_GRID_CELL_ROW_POS      = 137,
-    LV_STYLE_GRID_CELL_ROW_SPAN     = 138,
-    LV_STYLE_GRID_CELL_Y_ALIGN      = 139,
+    LV_STYLE_GRID_COLUMN_ALIGN      = 127,
+    LV_STYLE_GRID_ROW_ALIGN         = 128,
+    LV_STYLE_GRID_ROW_DSC_ARRAY     = 129,
+    LV_STYLE_GRID_COLUMN_DSC_ARRAY  = 130,
+    LV_STYLE_GRID_CELL_COLUMN_POS   = 131,
+    LV_STYLE_GRID_CELL_COLUMN_SPAN  = 132,
+    LV_STYLE_GRID_CELL_X_ALIGN      = 133,
+    LV_STYLE_GRID_CELL_ROW_POS      = 134,
+    LV_STYLE_GRID_CELL_ROW_SPAN     = 135,
+    LV_STYLE_GRID_CELL_Y_ALIGN      = 136,
+    LV_STYLE_IMAGE_COLORKEY         = 137,
 
-    LV_STYLE_LAST_BUILT_IN_PROP     = 140,
+    LV_STYLE_BLUR_RADIUS            = 138,
+    LV_STYLE_BLUR_BACKDROP          = 139,
+    LV_STYLE_BLUR_QUALITY           = 140,
+
+    LV_STYLE_LAST_BUILT_IN_PROP,
 
     LV_STYLE_NUM_BUILT_IN_PROPS     = LV_STYLE_LAST_BUILT_IN_PROP + 1,
 
@@ -357,6 +381,19 @@ void lv_style_reset(lv_style_t * style);
  * @param src   the source style to copy from.
  */
 void lv_style_copy(lv_style_t * dst, const lv_style_t * src);
+
+/**
+ * Copy all properties of a style to an other without resetting the dst style.
+ * It has the same effect as calling the same `lv_set_style_...`
+ * functions on both styles.
+ * It means new memory will be allocated to store the properties in
+ * the destination style.
+ * After the copy the destination style is fully independent of the source
+ * and source can removed without affecting the destination style.
+ * @param dst   the destination to copy into (cannot be a constant style)
+ * @param src   the source style to copy from.
+ */
+void lv_style_merge(lv_style_t * dst, const lv_style_t * src);
 
 
 /**

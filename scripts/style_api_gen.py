@@ -273,6 +273,10 @@ props = [
  'style_type': 'num',   'var_type': 'lv_opa_t' ,  'default':0, 'inherited': 0, 'layout': 0, 'ext_draw': 0,
  'dsc': "Set intensity of color mixing. Value 0, `LV_OPA_0` or `LV_OPA_TRANSP` means fully transparent, 255, `LV_OPA_100` or `LV_OPA_COVER` means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency."},
 
+{'name': 'IMAGE_COLORKEY',
+ 'style_type': 'ptr',   'var_type': 'const lv_image_colorkey_t *',  'default':'`NULL`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "Set image colorkey definition. The lv_image_colorkey_t contains two color values: `high_color` and `low_color`. the color of pixels ranging from `low_color` to `high_color` will be transparent."},
+
 {'section': 'Line', 'dsc':'Properties to describe line-like Widgets' },
 {'name': 'LINE_WIDTH',
  'style_type': 'num',   'var_type': 'int32_t' ,  'default':0, 'inherited': 0, 'layout': 0, 'ext_draw': 1,
@@ -348,6 +352,18 @@ props = [
 'style_type': 'num',   'var_type': 'lv_text_align_t' ,  'default':'`LV_TEXT_ALIGN_AUTO`', 'inherited': 1, 'layout': 1, 'ext_draw': 0,
  'dsc': "Set how to align the lines of the text. Note that it doesn't align the Widget itself, only the lines inside the Widget. Possible values are `LV_TEXT_ALIGN_LEFT/CENTER/RIGHT/AUTO`. `LV_TEXT_ALIGN_AUTO` detect the text base direction and uses left or right alignment accordingly"},
 
+{'name': 'TEXT_OUTLINE_STROKE_COLOR',
+'style_type': 'color', 'var_type': 'lv_color_t',  'default':'`0x000000`', 'inherited': 1, 'layout': 0, 'ext_draw': 0, 'filtered': 1,
+ 'dsc': "Sets the color of letter outline stroke."},
+
+{'name': 'TEXT_OUTLINE_STROKE_WIDTH',
+ 'style_type': 'num',  'var_type': 'int32_t' ,  'default':0, 'inherited': 1, 'layout': 1, 'ext_draw': 0,
+ 'dsc': "Set the letter outline stroke width in pixels."},
+
+{'name': 'TEXT_OUTLINE_STROKE_OPA',
+ 'style_type': 'num',  'var_type': 'lv_opa_t',  'default':'`LV_OPA_COVER`', 'inherited': 1, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "Set the opacity of the letter outline stroke. Value 0, `LV_OPA_0` or `LV_OPA_TRANSP` means fully transparent, 255, `LV_OPA_100` or `LV_OPA_COVER` means fully covering, other values or LV_OPA_10, LV_OPA_20, etc means semi transparency."},
+
 {'section': 'Miscellaneous', 'dsc':'Mixed properties for various purposes.' },
 {'name': 'RADIUS',
  'style_type': 'num', 'var_type': 'int32_t', 'default':0, 'inherited': 0, 'layout': 0, 'ext_draw': 0,
@@ -359,7 +375,7 @@ props = [
 
 {'name': 'CLIP_CORNER',
  'style_type': 'num',   'var_type': 'bool',  'default':0, 'inherited': 0, 'layout': 0, 'ext_draw': 0,
- 'dsc': "Enable to clip the overflowed content on the rounded corner. Can be `true` or `false`." },
+ 'dsc': "Enable clipping of content that overflows rounded corners of parent Widget. Can be `true` or `false`." },
 
 {'name': 'OPA',
  'style_type': 'num',   'var_type': 'lv_opa_t',  'default':'`LV_OPA_COVER`', 'inherited': 1, 'layout': 0, 'ext_draw': 0,
@@ -376,6 +392,26 @@ props = [
 {'name': 'COLOR_FILTER_OPA',
  'style_type': 'num',   'var_type': 'lv_opa_t' ,  'default':'`LV_OPA_TRANSP`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
  'dsc': "The intensity of mixing of color filter."},
+
+{'name': 'RECOLOR',
+ 'style_type': 'color', 'var_type': 'lv_color_t',  'default':'`0x000000`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "Set a color to mix to the obj."},
+
+{'name': 'RECOLOR_OPA',
+ 'style_type': 'num',   'var_type': 'lv_opa_t',  'default':'`LV_OPA_TRANSP`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "Sets the intensity of color mixing. Value 0, `LV_OPA_0` or `LV_OPA_TRANSP` means fully transparent. A value of  255, `LV_OPA_100` or `LV_OPA_COVER` means fully opaque. Intermediate values like LV_OPA_10, LV_OPA_20, etc result in semi-transparency."},
+
+{'name': 'BLUR_RADIUS',
+ 'style_type': 'num',   'var_type': 'int32_t',  'default':'`0`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "Sets the intensity of blurring. Applied on each lv_part separately before the children are rendered."},
+
+{'name': 'BLUR_BACKDROP',
+ 'style_type': 'num',   'var_type': 'bool',  'default':'`false`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "If `true` the background of the widget will be blurred. The part should have < 100% opacity to make it visible. If `false` the given part will be blurred when it's rendered but before drawing the children."},
+
+{'name': 'BLUR_QUALITY',
+ 'style_type': 'num',   'var_type': 'lv_blur_quality_t',  'default':'`LV_BLUR_QUALITY_AUTO`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
+ 'dsc': "Setting to `LV_BLUR_QUALITY_SPEED` the blurring algorithm will prefer speed over quality. `LV_BLUR_QUALITY_PRECISION` will force using higher quality but slower blur. With `LV_BLUR_QUALITY_AUTO` the quality will be selected automatically. "},
 
  {'name': 'ANIM',
  'style_type': 'ptr',   'var_type': 'const lv_anim_t *',  'default':'`NULL`', 'inherited': 0, 'layout': 0, 'ext_draw': 0,
@@ -458,7 +494,7 @@ props = [
  'dsc': "Defines how to distribute the rows."},
 
 {'name': 'GRID_CELL_COLUMN_POS',
- 'style_type': 'num',   'var_type': 'int32_t', 'default':'`LV_GRID_ALIGN_START`', 'inherited': 0, 'layout': 1, 'ext_draw': 0,
+ 'style_type': 'num',   'var_type': 'int32_t', 'default':0, 'inherited': 0, 'layout': 1, 'ext_draw': 0,
  'dsc': "Set column in which Widget should be placed."},
 
 {'name': 'GRID_CELL_X_ALIGN',
@@ -466,11 +502,11 @@ props = [
  'dsc': "Set how to align Widget horizontally."},
 
 {'name': 'GRID_CELL_COLUMN_SPAN',
- 'style_type': 'num',   'var_type': 'int32_t', 'default':'`LV_GRID_ALIGN_START`', 'inherited': 0, 'layout': 1, 'ext_draw': 0,
+ 'style_type': 'num',   'var_type': 'int32_t', 'default':1, 'inherited': 0, 'layout': 1, 'ext_draw': 0,
  'dsc': "Set how many columns Widget should span. Needs to be >= 1."},
 
 {'name': 'GRID_CELL_ROW_POS',
- 'style_type': 'num',   'var_type': 'int32_t', 'default':'`LV_GRID_ALIGN_START`', 'inherited': 0, 'layout': 1, 'ext_draw': 0,
+ 'style_type': 'num',   'var_type': 'int32_t', 'default':0, 'inherited': 0, 'layout': 1, 'ext_draw': 0,
  'dsc': "Set row in which Widget should be placed."},
 
 {'name': 'GRID_CELL_Y_ALIGN',
@@ -478,7 +514,7 @@ props = [
  'dsc': "Set how to align Widget vertically."},
 
 {'name': 'GRID_CELL_ROW_SPAN',
- 'style_type': 'num',   'var_type': 'int32_t', 'default':'`LV_GRID_ALIGN_START`', 'inherited': 0, 'layout': 1, 'ext_draw': 0,
+ 'style_type': 'num',   'var_type': 'int32_t', 'default':1, 'inherited': 0, 'layout': 1, 'ext_draw': 0,
  'dsc': "Set how many rows Widget should span. Needs to be >= 1."},
 ]
 
@@ -727,7 +763,7 @@ print('''\
 ''')
 print('#endif /* LV_STYLE_GEN_H */')
 
-sys.stdout = open(base_dir + '/../docs/details/base-widget/styles/style-properties.rst', 'w')
+sys.stdout = open(base_dir + '/../docs/src/common-widget-features/styles/style-properties.rst', 'w')
 
 print('.. _style_properties:')
 print()

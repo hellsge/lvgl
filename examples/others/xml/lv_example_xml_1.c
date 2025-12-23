@@ -38,16 +38,16 @@ void lv_example_xml_1(void)
         "</component>";
 
     /*Register all the custom components*/
-    lv_xml_component_register_from_data("red_button", red_button_xml);
-    lv_xml_component_register_from_data("card", card_xml);
-    lv_xml_component_register_from_data("motor_card", motor_card_xml);
+    lv_xml_register_component_from_data("red_button", red_button_xml);
+    lv_xml_register_component_from_data("card", card_xml);
+    lv_xml_register_component_from_data("motor_card", motor_card_xml);
 
     lv_obj_t * card;
     /*Create a card with the default values*/
-    card = lv_xml_create(lv_screen_active(), "card", NULL);
+    card = (lv_obj_t *) lv_xml_create(lv_screen_active(), "card", NULL);
 
     /*Create a motor card too. The returned value can be adjusted freely*/
-    card = lv_xml_create(lv_screen_active(), "motor_card", NULL);
+    card = (lv_obj_t *) lv_xml_create(lv_screen_active(), "motor_card", NULL);
     lv_obj_set_y(card, 90);
 
     /*Pass properties to a card*/
@@ -57,7 +57,7 @@ void lv_example_xml_1(void)
         "title", "New title",
         NULL, NULL,
     };
-    card = lv_xml_create(lv_screen_active(), "card", attrs);
+    card = (lv_obj_t *) lv_xml_create(lv_screen_active(), "card", attrs);
 
 }
 #endif

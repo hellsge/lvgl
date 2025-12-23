@@ -67,6 +67,11 @@ static lv_obj_t * get_next_item(lv_obj_t * cont, bool rev, int32_t * item_id);
 static int32_t lv_obj_get_width_with_margin(const lv_obj_t * obj);
 static int32_t lv_obj_get_height_with_margin(const lv_obj_t * obj);
 
+static inline int32_t div_round_closest(int32_t dividend, int32_t divisor)
+{
+    return (dividend + divisor / 2) / divisor;
+}
+
 /**********************
  *  GLOBAL VARIABLES
  **********************/
@@ -116,7 +121,8 @@ void lv_obj_set_flex_align(lv_obj_t * obj, lv_flex_align_t main_place, lv_flex_a
 void lv_obj_set_flex_grow(lv_obj_t * obj, uint8_t grow)
 {
     lv_obj_set_style_flex_grow(obj, grow, 0);
-    lv_obj_mark_layout_as_dirty(lv_obj_get_parent(obj));
+    lv_obj_t * parent = lv_obj_get_parent(obj);
+    if(parent) lv_obj_mark_layout_as_dirty(parent);
 }
 
 /**********************
@@ -261,14 +267,15 @@ static int32_t find_track_end(lv_obj_t * cont, flex_t * f, int32_t item_start_id
         if(!lv_obj_has_flag_any(item, LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_FLOATING)) {
             uint8_t grow_value = lv_obj_get_style_flex_grow(item, LV_PART_MAIN);
             if(grow_value) {
-                int32_t min_size = f->row ? lv_obj_get_style_min_width(item, LV_PART_MAIN)
-                                   : lv_obj_get_style_min_height(item, LV_PART_MAIN);
-
+                int32_t min_size = f->row ? lv_obj_calc_dynamic_width(item, LV_STYLE_MIN_WIDTH, NULL)
+                                   : lv_obj_calc_dynamic_height(item, LV_STYLE_MIN_HEIGHT, NULL);
                 int32_t req_size = min_size;
-                if(item_id != item_start_id) req_size += item_gap; /*No gap before the first item*/
+                if(item_id != item_start_id)
+                    req_size += item_gap; /*No gap before the first item*/
 
                 /*Wrap if can't fit*/
-                if(f->wrap && t->track_fix_main_size + grow_min_size_sum  + req_size > max_main_size) break;
+                if(f->wrap && t->track_fix_main_size + grow_min_size_sum + req_size > max_main_size)
+                    break;
 
                 grow_min_size_sum += req_size;
                 if(item_id != item_start_id) {
@@ -280,14 +287,15 @@ static int32_t find_track_end(lv_obj_t * cont, flex_t * f, int32_t item_start_id
                 if(t->grow_dsc_calc) {
                     grow_dsc_t * new_dsc = lv_realloc(t->grow_dsc, sizeof(grow_dsc_t) * (t->grow_item_cnt));
                     LV_ASSERT_MALLOC(new_dsc);
-                    if(new_dsc == NULL) return item_id;
+                    if(new_dsc == NULL)
+                        return item_id;
 
+                    int32_t max_size = f->row ? lv_obj_calc_dynamic_width(item, LV_STYLE_MAX_WIDTH, NULL)
+                                       : lv_obj_calc_dynamic_height(item, LV_STYLE_MAX_HEIGHT, NULL);
 
                     new_dsc[t->grow_item_cnt - 1].item = item;
-                    new_dsc[t->grow_item_cnt - 1].min_size = f->row ? lv_obj_get_style_min_width(item, LV_PART_MAIN)
-                                                             : lv_obj_get_style_min_height(item, LV_PART_MAIN);
-                    new_dsc[t->grow_item_cnt - 1].max_size = f->row ? lv_obj_get_style_max_width(item, LV_PART_MAIN)
-                                                             : lv_obj_get_style_max_height(item, LV_PART_MAIN);
+                    new_dsc[t->grow_item_cnt - 1].min_size = min_size;
+                    new_dsc[t->grow_item_cnt - 1].max_size = max_size;
                     new_dsc[t->grow_item_cnt - 1].grow_value = grow_value;
                     new_dsc[t->grow_item_cnt - 1].clamped = 0;
 
@@ -339,7 +347,7 @@ static void children_repos(lv_obj_t * cont, flex_t * f, int32_t item_first_id, i
     int32_t (*area_get_main_size)(const lv_area_t *) = (f->row ? lv_area_get_width : lv_area_get_height);
     int32_t (*area_get_cross_size)(const lv_area_t *) = (!f->row ? lv_area_get_width : lv_area_get_height);
 
-    typedef int32_t (*margin_func_t)(const lv_obj_t *, uint32_t);
+    typedef int32_t (*margin_func_t)(const lv_obj_t *, lv_part_t);
     margin_func_t get_margin_main_start = (f->row ? lv_obj_get_style_margin_left : lv_obj_get_style_margin_top);
     margin_func_t get_margin_main_end = (f->row ? lv_obj_get_style_margin_right : lv_obj_get_style_margin_bottom);
     margin_func_t get_margin_cross_start = (!f->row ? lv_obj_get_style_margin_left : lv_obj_get_style_margin_top);
@@ -360,13 +368,11 @@ static void children_repos(lv_obj_t * cont, flex_t * f, int32_t item_first_id, i
                 grow_max_size -= t->grow_dsc[i].final_size;
             }
         }
-        int32_t grow_unit;
 
         for(i = 0; i < t->grow_item_cnt; i++) {
             if(t->grow_dsc[i].clamped == 0) {
                 LV_ASSERT(grow_value_sum != 0);
-                grow_unit = grow_max_size / grow_value_sum;
-                int32_t size = grow_unit * t->grow_dsc[i].grow_value;
+                int32_t size = div_round_closest(grow_max_size * t->grow_dsc[i].grow_value, grow_value_sum);
                 int32_t size_clamp = LV_CLAMP(t->grow_dsc[i].min_size, size, t->grow_dsc[i].max_size);
 
                 if(size_clamp != size) {
@@ -386,7 +392,7 @@ static void children_repos(lv_obj_t * cont, flex_t * f, int32_t item_first_id, i
 
     int32_t place_gap = 0;
     place_content(f->main_place, max_main_size, t->track_main_size, t->item_cnt, &main_pos, &place_gap);
-    if(f->row && rtl) main_pos += lv_obj_get_content_width(cont);
+    if(f->row && rtl) main_pos = max_main_size - main_pos;
 
     lv_obj_t * item = lv_obj_get_child(cont, item_first_id);
     /*Reposition the children*/
@@ -395,6 +401,10 @@ static void children_repos(lv_obj_t * cont, flex_t * f, int32_t item_first_id, i
             item = get_next_item(cont, f->rev, &item_first_id);
             continue;
         }
+
+        uint16_t item_w_layout = item->w_layout;
+        uint16_t item_h_layout = item->h_layout;
+
         int32_t grow_size = lv_obj_get_style_flex_grow(item, LV_PART_MAIN);
         if(grow_size) {
             int32_t s = 0;
@@ -428,6 +438,10 @@ static void children_repos(lv_obj_t * cont, flex_t * f, int32_t item_first_id, i
         else {
             item->w_layout = 0;
             item->h_layout = 0;
+        }
+
+        if(item->w_layout != item_w_layout || item->h_layout != item_h_layout) {
+            lv_obj_mark_layout_as_dirty(item);
         }
 
         int32_t cross_pos = 0;

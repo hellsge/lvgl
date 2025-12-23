@@ -38,7 +38,7 @@
 
 #include "lv_draw_nema_gfx.h"
 #include "../../font/lv_font.h"
-#include "../../font/lv_font_fmt_txt.h"
+#include "../../font/fmt_txt/lv_font_fmt_txt.h"
 
 /*********************
  *      DEFINES
@@ -119,7 +119,7 @@ void lv_draw_nema_gfx_init(void)
 
 
 #if LV_USE_OS
-    lv_thread_init(&draw_nema_gfx_unit->thread, "nemagfx", LV_THREAD_PRIO_HIGH, nema_gfx_render_thread_cb, 2 * 1024,
+    lv_thread_init(&draw_nema_gfx_unit->thread, "nemagfx", LV_DRAW_THREAD_PRIO, nema_gfx_render_thread_cb, 2 * 1024,
                    draw_nema_gfx_unit);
 #endif
 }
@@ -177,7 +177,7 @@ static int32_t nema_gfx_evaluate(lv_draw_unit_t * draw_unit, lv_draw_task_t * ta
             }
         case LV_DRAW_TASK_TYPE_TRIANGLE: {
                 lv_draw_triangle_dsc_t * draw_triangle_dsc = (lv_draw_triangle_dsc_t *) task->draw_dsc;
-                if((draw_triangle_dsc->bg_grad.dir == (lv_grad_dir_t)LV_GRAD_DIR_NONE)) {
+                if((draw_triangle_dsc->grad.dir == (lv_grad_dir_t)LV_GRAD_DIR_NONE)) {
                     if(task->preference_score > 80) {
                         task->preference_score = 80;
                         task->preferred_draw_unit_id = DRAW_UNIT_ID_NEMA_GFX;
@@ -243,10 +243,18 @@ static int32_t nema_gfx_evaluate(lv_draw_unit_t * draw_unit, lv_draw_task_t * ta
                 }
                 break;
             }
+#if LV_USE_VECTOR_GRAPHIC && LV_USE_NEMA_VG
+        case LV_DRAW_TASK_TYPE_VECTOR: {
+                if(task->preference_score > 80) {
+                    task->preference_score = 80;
+                    task->preferred_draw_unit_id = DRAW_UNIT_ID_NEMA_GFX;
+                }
+                return 1;
+            }
+#endif
         case LV_DRAW_TASK_TYPE_BOX_SHADOW:
         case LV_DRAW_TASK_TYPE_MASK_RECTANGLE:
         case LV_DRAW_TASK_TYPE_MASK_BITMAP:
-        case LV_DRAW_TASK_TYPE_VECTOR:
         default:
             break;
     }
@@ -283,7 +291,7 @@ static int32_t nema_gfx_dispatch(lv_draw_unit_t * draw_unit, lv_layer_t * layer)
 #else
     nema_gfx_execute_drawing(draw_nema_gfx_unit);
 
-    draw_nema_gfx_unit->task_act->state = LV_DRAW_TASK_STATE_READY;
+    draw_nema_gfx_unit->task_act->state = LV_DRAW_TASK_STATE_FINISHED;
     draw_nema_gfx_unit->task_act = NULL;
 
     /* The draw unit is free now. Request a new dispatching as it can get a new task. */
@@ -326,6 +334,11 @@ static void nema_gfx_execute_drawing(lv_draw_nema_gfx_unit_t * u)
         case LV_DRAW_TASK_TYPE_BORDER:
             lv_draw_nema_gfx_border(t, t->draw_dsc, &t->area);
             break;
+#if LV_USE_VECTOR_GRAPHIC && LV_USE_NEMA_VG
+        case LV_DRAW_TASK_TYPE_VECTOR:
+            lv_draw_nema_gfx_vector(t, t->draw_dsc, &t->area);
+            break;
+#endif
         default:
             break;
     }
@@ -386,7 +399,7 @@ static void nema_gfx_render_thread_cb(void * ptr)
             nema_gfx_execute_drawing(u);
         }
         /* Signal the ready state to dispatcher. */
-        u->task_act->state = LV_DRAW_TASK_STATE_READY;
+        u->task_act->state = LV_DRAW_TASK_STATE_FINISHED;
         /* Cleanup. */
         u->task_act = NULL;
 

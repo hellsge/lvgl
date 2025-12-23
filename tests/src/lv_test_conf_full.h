@@ -38,8 +38,8 @@
 #define LV_FONT_MONTSERRAT_48   1
 #define LV_FONT_MONTSERRAT_28_COMPRESSED    1
 #define LV_FONT_DEJAVU_16_PERSIAN_HEBREW    1
-#define LV_FONT_SIMSUN_14_CJK   1
-#define LV_FONT_SIMSUN_16_CJK   1
+#define LV_FONT_SOURCE_HAN_SANS_SC_14_CJK   1
+#define LV_FONT_SOURCE_HAN_SANS_SC_16_CJK   1
 #define LV_FONT_UNSCII_8        1
 #define LV_FONT_UNSCII_16       1
 #define LV_FONT_DEFAULT         &lv_font_montserrat_14
@@ -79,7 +79,15 @@
 #define LV_USE_BMP          1
 #define LV_USE_TJPGD        1
 #ifndef _WIN32
-    #define LV_USE_LIBJPEG_TURBO   1
+    #define LV_USE_LIBJPEG_TURBO       1
+    #ifndef LV_USE_LIBWEBP /* If WebP library is not found, defaulting to 0 in CMakeLists.txt */
+        #define LV_USE_LIBWEBP             1
+    #endif
+#endif
+#ifndef LV_USE_FFMPEG
+    #define LV_USE_FFMPEG              1
+    #define LV_FFMPEG_DUMP_FORMAT      1
+    #define LV_FFMPEG_PLAYER_USE_LV_FS 1
 #endif
 #define LV_USE_GIF          1
 #define LV_USE_QRCODE       1
@@ -90,6 +98,7 @@
 #define LV_USE_OBSERVER         1
 #define LV_USE_FILE_EXPLORER    1
 #define LV_USE_TINY_TTF         1
+#define LV_TINY_TTF_FILE_SUPPORT 1
 #define LV_USE_SYSMON           1
 #define LV_USE_MEM_MONITOR      1
 #define LV_USE_PERF_MONITOR     1
@@ -102,8 +111,10 @@
 #define LV_USE_SVG_DEBUG        1
 #define LV_USE_PROFILER         1
 #define LV_PROFILER_INCLUDE     "lv_profiler_builtin.h"
+#define LV_USE_PROFILER_BUILTIN_POSIX 1
 #define LV_USE_GRIDNAV          1
 #define LV_USE_XML              1
+#define LV_USE_TRANSLATION      1
 #define LV_USE_TEST             1
 #define LV_USE_TEST_SCREENSHOT_COMPARE  1
 
@@ -112,12 +123,10 @@
 #define LV_USE_DEMO_KEYPAD_AND_ENCODER     1
 #define LV_USE_DEMO_FLEX_LAYOUT            1
 #define LV_USE_DEMO_STRESS      1
-#define LV_USE_DEMO_TRANSFORM   1
 #define LV_USE_DEMO_MULTILANG   1
 #define LV_USE_DEMO_RENDER      1
 #define LV_USE_DEMO_MUSIC       1
 #define LV_USE_DEMO_BENCHMARK   1
-#define LV_USE_DEMO_SCROLL      1
 #define LV_USE_DEMO_EBIKE       1
 #define LV_USE_DEMO_VECTOR_GRAPHIC  1
 #define LV_USE_DEMO_HIGH_RES    1
@@ -139,15 +148,38 @@
     #define LV_USE_LINUX_FBDEV  1
 #endif
 
+#ifndef LV_USE_NUTTX
+    #define LV_USE_NUTTX    0
+#endif
+#if defined(_WIN32) && LV_USE_NUTTX
+    #undef LV_USE_NUTTX /* Disable NuttX build on Windows */
+    #define LV_USE_NUTTX    0
+#endif
+#if LV_USE_NUTTX
+    #define LV_USE_NUTTX_INDEPENDENT_IMAGE_HEAP 1
+    #define LV_NUTTX_DEFAULT_DRAW_BUF_USE_INDEPENDENT_IMAGE_HEAP    1
+    #define LV_USE_NUTTX_LIBUV                  1
+    #define LV_USE_NUTTX_CUSTOM_INIT            0
+    #define LV_USE_NUTTX_LCD                    1
+    #define LV_NUTTX_LCD_BUFFER_COUNT           2
+    #define LV_NUTTX_LCD_BUFFER_SIZE            60
+    #define LV_USE_NUTTX_TOUCHSCREEN            1
+    #define LV_NUTTX_TOUCHSCREEN_CURSOR_SIZE    20
+    #define LV_USE_NUTTX_MOUSE                  1
+    #define LV_USE_NUTTX_MOUSE_MOVE_STEP        1
+    #define LV_USE_NUTTX_TRACE_FILE             1
+    #define LV_NUTTX_TRACE_FILE_PATH            "/data/lvgl-trace.log"
+#endif
+
 #ifndef LV_USE_WAYLAND
     #define LV_USE_WAYLAND  1
-    #define LV_WAYLAND_WINDOW_DECORATIONS 1
 #endif
 
 #define LV_USE_ILI9341      1
 #define LV_USE_ST7735       1
 #define LV_USE_ST7789       1
 #define LV_USE_ST7796       1
+#define LV_USE_FT81X        1
 
 #ifndef LV_USE_LIBINPUT
     #define LV_USE_LIBINPUT     1
@@ -172,5 +204,7 @@
 #define LV_USE_DRAW_SW_COMPLEX_GRADIENTS    1
 
 #define LV_USE_GESTURE_RECOGNITION 1
+
+#define LV_DISABLE_API_MAPPING 1
 
 #endif /* LV_TEST_CONF_FULL_H */

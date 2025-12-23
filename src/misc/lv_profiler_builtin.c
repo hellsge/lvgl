@@ -142,14 +142,17 @@ void lv_profiler_builtin_init(const lv_profiler_builtin_config_t * config)
         profiler_ctx->config.flush_cb("#\n");
     }
 
-    lv_profiler_builtin_set_enable(true);
+    lv_profiler_builtin_set_enable(LV_PROFILER_BUILTIN_DEFAULT_ENABLE);
 
     LV_LOG_INFO("init OK, item_num = %d", (int)num);
 }
 
 void lv_profiler_builtin_uninit(void)
 {
-    LV_ASSERT_NULL(profiler_ctx);
+    if(!profiler_ctx) {
+        return;
+    }
+
     LV_PROFILER_MULTEX_DEINIT;
     lv_free(profiler_ctx->item_arr);
     lv_free(profiler_ctx);
@@ -176,10 +179,9 @@ void lv_profiler_builtin_flush(void)
 
 void lv_profiler_builtin_write(const char * func, char tag)
 {
-    LV_ASSERT_NULL(profiler_ctx);
     LV_ASSERT_NULL(func);
 
-    if(!profiler_ctx->enable) {
+    if(!(profiler_ctx && profiler_ctx->enable)) {
         return;
     }
 

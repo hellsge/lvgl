@@ -128,7 +128,14 @@ static void chart_event_cb(lv_event_t * e)
         lv_snprintf(buf, sizeof(buf), "%"LV_PRIu32, ser->y_points[base_dsc->id2]);
 
         lv_point_t text_size;
-        lv_text_get_size(&text_size, buf, LV_FONT_DEFAULT, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+        lv_text_attributes_t attributes = {0};
+
+        attributes.letter_space = 0;
+        attributes.line_space = 0;
+        attributes.max_width = LV_COORD_MAX;
+        attributes.text_flags = LV_TEXT_FLAG_NONE;
+
+        lv_text_get_size_attributes(&text_size, buf, LV_FONT_DEFAULT, &attributes);
 
         lv_area_t txt_area;
         txt_area.x1 = draw_task->area.x1 + lv_area_get_width(&draw_task->area) / 2 - text_size.x / 2;
@@ -200,8 +207,8 @@ void test_chart_scatter(void)
 
     lv_chart_set_type(chart, LV_CHART_TYPE_SCATTER);
 
-    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_X, 50, 100);
-    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 20);
+    lv_chart_set_axis_range(chart, LV_CHART_AXIS_PRIMARY_X, 50, 100);
+    lv_chart_set_axis_range(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 20);
 
     lv_chart_set_point_count(chart, 3);
     lv_chart_series_t * ser = lv_chart_add_series(chart, red_color, LV_CHART_AXIS_PRIMARY_Y);
@@ -210,6 +217,43 @@ void test_chart_scatter(void)
     lv_chart_set_next_value2(chart, ser, 100, 20);
 
     TEST_ASSERT_EQUAL_SCREENSHOT("widgets/chart_scatter.png");
+}
+
+void test_chart_properties(void)
+{
+#if LV_USE_OBJ_PROPERTY
+    lv_property_t prop;
+
+    /* Test TYPE property */
+    prop.id = LV_PROPERTY_CHART_TYPE;
+    prop.num = LV_CHART_TYPE_BAR;
+    TEST_ASSERT_TRUE(lv_obj_set_property(chart, &prop) == LV_RESULT_OK);
+    TEST_ASSERT_EQUAL_INT(LV_CHART_TYPE_BAR, lv_obj_get_property(chart, LV_PROPERTY_CHART_TYPE).num);
+
+    /* Test POINT_COUNT property */
+    prop.id = LV_PROPERTY_CHART_POINT_COUNT;
+    prop.num = 20;
+    TEST_ASSERT_TRUE(lv_obj_set_property(chart, &prop) == LV_RESULT_OK);
+    TEST_ASSERT_EQUAL_INT(20, lv_obj_get_property(chart, LV_PROPERTY_CHART_POINT_COUNT).num);
+
+    /* Test UPDATE_MODE property */
+    prop.id = LV_PROPERTY_CHART_UPDATE_MODE;
+    prop.num = LV_CHART_UPDATE_MODE_CIRCULAR;
+    TEST_ASSERT_TRUE(lv_obj_set_property(chart, &prop) == LV_RESULT_OK);
+    TEST_ASSERT_EQUAL_INT(LV_CHART_UPDATE_MODE_CIRCULAR, lv_obj_get_property(chart, LV_PROPERTY_CHART_UPDATE_MODE).num);
+
+    /* Test HOR_DIV_LINE_COUNT property */
+    prop.id = LV_PROPERTY_CHART_HOR_DIV_LINE_COUNT;
+    prop.num = 5;
+    TEST_ASSERT_TRUE(lv_obj_set_property(chart, &prop) == LV_RESULT_OK);
+    TEST_ASSERT_EQUAL_INT(5, lv_obj_get_property(chart, LV_PROPERTY_CHART_HOR_DIV_LINE_COUNT).num);
+
+    /* Test VER_DIV_LINE_COUNT property */
+    prop.id = LV_PROPERTY_CHART_VER_DIV_LINE_COUNT;
+    prop.num = 7;
+    TEST_ASSERT_TRUE(lv_obj_set_property(chart, &prop) == LV_RESULT_OK);
+    TEST_ASSERT_EQUAL_INT(7, lv_obj_get_property(chart, LV_PROPERTY_CHART_VER_DIV_LINE_COUNT).num);
+#endif
 }
 
 #endif

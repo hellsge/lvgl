@@ -22,11 +22,12 @@ void test_xml_scale_with_attrs(void)
         "width", "120",
         "height", "120",
         "mode", "round_outer",
-        "range", "0 150",
+        "min_value", "0",
+        "max_value", "150",
         "total_tick_count", "16",
         "major_tick_every", "3",
-        "style_length:indicator", "10",
-        "style_transform_rotation:indicator", "300",
+        "style_length-indicator", "10",
+        "style_transform_rotation-indicator", "300",
         NULL, NULL,
     };
 
@@ -34,7 +35,8 @@ void test_xml_scale_with_attrs(void)
     lv_obj_center(scale);
 
     const char * section_attrs[] = {
-        "range", "10 80",
+        "min_value", "10",
+        "max_value", "80",
         NULL, NULL,
     };
 

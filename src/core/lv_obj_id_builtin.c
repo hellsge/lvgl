@@ -1,5 +1,5 @@
 /**
- * @file lv_obj_id.c
+ * @file lv_obj_id_builtin.c
  *
  */
 
@@ -9,7 +9,7 @@
 #include "lv_obj_class_private.h"
 #include "lv_obj_private.h"
 #include "lv_global.h"
-#include "../osal/lv_os.h"
+#include "../osal/lv_os_private.h"
 #include "../stdlib/lv_sprintf.h"
 
 /*********************
@@ -88,7 +88,6 @@ void lv_obj_set_id(lv_obj_t * obj, void * id)
 
 void lv_obj_free_id(lv_obj_t * obj)
 {
-    LV_UNUSED(obj);
     obj->id = NULL;
 }
 

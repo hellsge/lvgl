@@ -18,6 +18,7 @@
 #include "../../misc/lv_assert.h"
 #include "../../misc/lv_math.h"
 #include "../../draw/lv_draw_arc.h"
+#include "../../core/lv_observer_private.h"
 
 /*********************
  *      DEFINES
@@ -50,10 +51,75 @@ static void value_update(lv_obj_t * arc);
 static int32_t knob_get_extra_size(lv_obj_t * obj);
 static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const lv_value_precise_t angle,
                                           const lv_value_precise_t tolerance_deg);
+#if LV_USE_OBSERVER
+    static void arc_value_changed_event_cb(lv_event_t * e);
+    static void arc_value_observer_cb(lv_observer_t * observer, lv_subject_t * subject);
+#endif /*LV_USE_OBSERVER*/
 
 /**********************
  *  STATIC VARIABLES
  **********************/
+
+#if LV_USE_OBJ_PROPERTY
+static const lv_property_ops_t lv_arc_properties[] = {
+    {
+        .id = LV_PROPERTY_ARC_START_ANGLE,
+        .setter = lv_arc_set_start_angle,
+        .getter = lv_arc_get_angle_start,
+    },
+    {
+        .id = LV_PROPERTY_ARC_END_ANGLE,
+        .setter = lv_arc_set_end_angle,
+        .getter = lv_arc_get_angle_end,
+    },
+    {
+        .id = LV_PROPERTY_ARC_BG_START_ANGLE,
+        .setter = lv_arc_set_bg_start_angle,
+        .getter = lv_arc_get_bg_angle_start,
+    },
+    {
+        .id = LV_PROPERTY_ARC_BG_END_ANGLE,
+        .setter = lv_arc_set_bg_end_angle,
+        .getter = lv_arc_get_bg_angle_end,
+    },
+    {
+        .id = LV_PROPERTY_ARC_ROTATION,
+        .setter = lv_arc_set_rotation,
+        .getter = lv_arc_get_rotation,
+    },
+    {
+        .id = LV_PROPERTY_ARC_MODE,
+        .setter = lv_arc_set_mode,
+        .getter = lv_arc_get_mode,
+    },
+    {
+        .id = LV_PROPERTY_ARC_VALUE,
+        .setter = lv_arc_set_value,
+        .getter = lv_arc_get_value,
+    },
+    {
+        .id = LV_PROPERTY_ARC_MIN_VALUE,
+        .setter = lv_arc_set_min_value,
+        .getter = lv_arc_get_min_value,
+    },
+    {
+        .id = LV_PROPERTY_ARC_MAX_VALUE,
+        .setter = lv_arc_set_max_value,
+        .getter = lv_arc_get_max_value,
+    },
+    {
+        .id = LV_PROPERTY_ARC_CHANGE_RATE,
+        .setter = lv_arc_set_change_rate,
+        .getter = lv_arc_get_change_rate,
+    },
+    {
+        .id = LV_PROPERTY_ARC_KNOB_OFFSET,
+        .setter = lv_arc_set_knob_offset,
+        .getter = lv_arc_get_knob_offset,
+    },
+};
+#endif
+
 const lv_obj_class_t lv_arc_class  = {
     .constructor_cb = lv_arc_constructor,
     .event_cb = lv_arc_event,
@@ -61,6 +127,7 @@ const lv_obj_class_t lv_arc_class  = {
     .editable = LV_OBJ_CLASS_EDITABLE_TRUE,
     .base_class = &lv_obj_class,
     .name = "lv_arc",
+    LV_PROPERTY_CLASS_FIELDS(arc, ARC)
 };
 
 /**********************
@@ -273,6 +340,16 @@ void lv_arc_set_range(lv_obj_t * obj, int32_t min, int32_t max)
     value_update(obj); /*value has changed relative to the new range*/
 }
 
+void lv_arc_set_min_value(lv_obj_t * obj, int32_t min)
+{
+    lv_arc_set_range(obj, min, lv_arc_get_max_value(obj));
+}
+
+void lv_arc_set_max_value(lv_obj_t * obj, int32_t max)
+{
+    lv_arc_set_range(obj, lv_arc_get_min_value(obj), max);
+}
+
 void lv_arc_set_change_rate(lv_obj_t * obj, uint32_t rate)
 {
     LV_ASSERT_OBJ(obj, MY_CLASS);
@@ -353,9 +430,34 @@ int32_t lv_arc_get_knob_offset(const lv_obj_t * obj)
     return ((lv_arc_t *)obj)->knob_offset;
 }
 
+uint32_t lv_arc_get_change_rate(lv_obj_t * obj)
+{
+    LV_ASSERT_OBJ(obj, MY_CLASS);
+    return ((lv_arc_t *)obj)->chg_rate;
+}
+
 /*=====================
  * Other functions
  *====================*/
+
+#if LV_USE_OBSERVER
+lv_observer_t * lv_arc_bind_value(lv_obj_t * obj, lv_subject_t * subject)
+{
+    LV_ASSERT_NULL(subject);
+    LV_ASSERT_NULL(obj);
+
+    if(subject->type != LV_SUBJECT_TYPE_INT && subject->type != LV_SUBJECT_TYPE_FLOAT) {
+        LV_LOG_WARN("Incompatible subject type: %d", subject->type);
+        return NULL;
+    }
+
+    lv_obj_add_event_cb(obj, arc_value_changed_event_cb, LV_EVENT_VALUE_CHANGED, subject);
+
+    lv_observer_t * observer = lv_subject_add_observer_obj(subject, arc_value_observer_cb, obj, NULL);
+    return observer;
+}
+#endif /*LV_USE_OBSERVER*/
+
 
 void lv_arc_align_obj_to_angle(const lv_obj_t * obj, lv_obj_t * obj_to_align, int32_t r_offset)
 {
@@ -509,12 +611,14 @@ static void lv_arc_event(const lv_obj_class_t * class_p, lv_event_t * e)
         angle -= arc->rotation;
         angle -= arc->bg_angle_start;  /*Make the angle relative to the start angle*/
 
+
         /* ensure the angle is in the range [0, 360) */
         while(angle < 0) angle += 360;
         while(angle >= 360) angle -= 360;
 
+
         const uint32_t circumference = (uint32_t)((2U * r * 314U) / 100U);  /* Equivalent to: 2r * 3.14, avoiding floats */
-        const lv_value_precise_t tolerance_deg = (360 * lv_dpx(50U)) / circumference;
+        const lv_value_precise_t tolerance_deg = (360 * lv_dpx(20U)) / circumference;
         const uint32_t min_close_prev = (uint32_t) arc->min_close;
 
         const bool is_angle_within_bg_bounds = lv_arc_angle_within_bg_bounds(obj, angle, tolerance_deg);
@@ -669,7 +773,7 @@ static void lv_arc_event(const lv_obj_class_t * class_p, lv_event_t * e)
         while(angle >= 360) angle -= 360;
 
         const uint32_t circumference = (uint32_t)((2U * r * 314U) / 100U);  /* Equivalent to: 2r * 3.14, avoiding floats */
-        const lv_value_precise_t tolerance_deg = (360 * lv_dpx(50U)) / circumference;
+        const lv_value_precise_t tolerance_deg = (360 * lv_dpx(20U)) / circumference;
 
         /* Check if the angle is outside the drawn background arc */
         const bool is_angle_within_bg_bounds = lv_arc_angle_within_bg_bounds(obj, angle, tolerance_deg);
@@ -967,10 +1071,14 @@ static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const lv_value_precise
     lv_arc_t * arc = (lv_arc_t *)obj;
 
     lv_value_precise_t bounds_angle = arc->bg_angle_end - arc->bg_angle_start;
+    if(arc->bg_angle_end == arc->bg_angle_start) return false; /*The arc has 0 deg span*/
 
     /* ensure the angle is in the range [0, 360) */
     while(bounds_angle < 0) bounds_angle += 360;
     while(bounds_angle >= 360) bounds_angle -= 360;
+
+    /*Full circle*/
+    if(bounds_angle == 0) bounds_angle = 360;
 
     /* Angle is in the bounds */
     if(angle <= bounds_angle) {
@@ -1008,5 +1116,36 @@ static bool lv_arc_angle_within_bg_bounds(lv_obj_t * obj, const lv_value_precise
 
     return false;
 }
+
+#if LV_USE_OBSERVER
+
+static void arc_value_changed_event_cb(lv_event_t * e)
+{
+    lv_obj_t * arc = lv_event_get_current_target(e);
+    lv_subject_t * subject = lv_event_get_user_data(e);
+
+    if(subject->type == LV_SUBJECT_TYPE_INT) {
+        lv_subject_set_int(subject, lv_arc_get_value(arc));
+    }
+#if LV_USE_FLOAT
+    else {
+        lv_subject_set_float(subject, (float)lv_arc_get_value(arc));
+    }
+#endif
+}
+
+static void arc_value_observer_cb(lv_observer_t * observer, lv_subject_t * subject)
+{
+    if(subject->type == LV_SUBJECT_TYPE_INT) {
+        lv_arc_set_value(observer->target, subject->value.num);
+    }
+#if LV_USE_FLOAT
+    else {
+        lv_arc_set_value(observer->target, (int32_t)subject->value.float_v);
+    }
+#endif
+}
+
+#endif /*LV_USE_OBSERVER*/
 
 #endif

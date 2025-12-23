@@ -41,7 +41,7 @@ void test_obj_property_set_get_should_match(void)
     prop.id = LV_PROPERTY_STYLE_X;
     prop.num = 0xaabb;
     TEST_ASSERT_TRUE(lv_obj_set_property(obj, &prop) == LV_RESULT_OK);
-    TEST_ASSERT_EQUAL_UINT32(0xaabb, lv_obj_get_style_x(obj, 0));
+    TEST_ASSERT_EQUAL_UINT32(0xaabb, lv_obj_get_style_x(obj, LV_PART_MAIN));
     TEST_ASSERT_EQUAL_UINT32(0xaabb, lv_obj_get_property(obj, LV_PROPERTY_STYLE_X).num);
 
     /* color type */
@@ -106,7 +106,7 @@ void test_obj_property_style_selector(void)
     prop.num = 0xaabb;  /* `num` shares same memory with `prop.style.value.num` */
     /* selector is initialed to zero when prop is defined. */
     TEST_ASSERT_TRUE(lv_obj_set_property(obj, &prop) == LV_RESULT_OK);
-    TEST_ASSERT_EQUAL_UINT32(0xaabb, lv_obj_get_style_x(obj, 0));
+    TEST_ASSERT_EQUAL_UINT32(0xaabb, lv_obj_get_style_x(obj, LV_PART_MAIN));
     TEST_ASSERT_EQUAL_UINT32(0xaabb, lv_obj_get_style_property(obj, LV_PROPERTY_STYLE_X, 0).num);
 
     lv_style_selector_t selector = LV_PART_MAIN | LV_STATE_PRESSED;
@@ -147,6 +147,7 @@ void test_obj_property_flag(void)
         { LV_OBJ_FLAG_FLOATING,                  LV_PROPERTY_OBJ_FLAG_FLOATING },
         { LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS,     LV_PROPERTY_OBJ_FLAG_SEND_DRAW_TASK_EVENTS },
         { LV_OBJ_FLAG_OVERFLOW_VISIBLE,          LV_PROPERTY_OBJ_FLAG_OVERFLOW_VISIBLE },
+        { LV_OBJ_FLAG_RADIO_BUTTON,              LV_PROPERTY_OBJ_FLAG_RADIO_BUTTON },
         { LV_OBJ_FLAG_FLEX_IN_NEW_TRACK,         LV_PROPERTY_OBJ_FLAG_FLEX_IN_NEW_TRACK },
         { LV_OBJ_FLAG_LAYOUT_1,                  LV_PROPERTY_OBJ_FLAG_LAYOUT_1 },
         { LV_OBJ_FLAG_LAYOUT_2,                  LV_PROPERTY_OBJ_FLAG_LAYOUT_2 },
@@ -154,8 +155,6 @@ void test_obj_property_flag(void)
         { LV_OBJ_FLAG_WIDGET_2,                  LV_PROPERTY_OBJ_FLAG_WIDGET_2 },
         { LV_OBJ_FLAG_USER_1,                    LV_PROPERTY_OBJ_FLAG_USER_1 },
         { LV_OBJ_FLAG_USER_2,                    LV_PROPERTY_OBJ_FLAG_USER_2 },
-        { LV_OBJ_FLAG_USER_3,                    LV_PROPERTY_OBJ_FLAG_USER_3 },
-        { LV_OBJ_FLAG_USER_4,                    LV_PROPERTY_OBJ_FLAG_USER_4 },
     };
 
     lv_obj_t * obj = lv_obj_create(lv_screen_active());

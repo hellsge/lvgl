@@ -14,7 +14,7 @@
  * Generated code from properties.py
  */
 /* *INDENT-OFF* */
-const lv_property_name_t lv_obj_property_names[73] = {
+const lv_property_name_t lv_obj_property_names[74] = {
     {"align",                  LV_PROPERTY_OBJ_ALIGN,},
     {"child_count",            LV_PROPERTY_OBJ_CHILD_COUNT,},
     {"content_height",         LV_PROPERTY_OBJ_CONTENT_HEIGHT,},
@@ -28,6 +28,7 @@ const lv_property_name_t lv_obj_property_names[73] = {
     {"flag_clickable",         LV_PROPERTY_OBJ_FLAG_CLICKABLE,},
     {"flag_end",               LV_PROPERTY_OBJ_FLAG_END,},
     {"flag_event_bubble",      LV_PROPERTY_OBJ_FLAG_EVENT_BUBBLE,},
+    {"flag_event_trickle",     LV_PROPERTY_OBJ_FLAG_EVENT_TRICKLE,},
     {"flag_flex_in_new_track", LV_PROPERTY_OBJ_FLAG_FLEX_IN_NEW_TRACK,},
     {"flag_floating",          LV_PROPERTY_OBJ_FLAG_FLOATING,},
     {"flag_gesture_bubble",    LV_PROPERTY_OBJ_FLAG_GESTURE_BUBBLE,},
@@ -37,6 +38,7 @@ const lv_property_name_t lv_obj_property_names[73] = {
     {"flag_layout_2",          LV_PROPERTY_OBJ_FLAG_LAYOUT_2,},
     {"flag_overflow_visible",  LV_PROPERTY_OBJ_FLAG_OVERFLOW_VISIBLE,},
     {"flag_press_lock",        LV_PROPERTY_OBJ_FLAG_PRESS_LOCK,},
+    {"flag_radio_button",      LV_PROPERTY_OBJ_FLAG_RADIO_BUTTON,},
     {"flag_scroll_chain_hor",  LV_PROPERTY_OBJ_FLAG_SCROLL_CHAIN_HOR,},
     {"flag_scroll_chain_ver",  LV_PROPERTY_OBJ_FLAG_SCROLL_CHAIN_VER,},
     {"flag_scroll_elastic",    LV_PROPERTY_OBJ_FLAG_SCROLL_ELASTIC,},
@@ -48,10 +50,9 @@ const lv_property_name_t lv_obj_property_names[73] = {
     {"flag_send_draw_task_events", LV_PROPERTY_OBJ_FLAG_SEND_DRAW_TASK_EVENTS,},
     {"flag_snappable",         LV_PROPERTY_OBJ_FLAG_SNAPPABLE,},
     {"flag_start",             LV_PROPERTY_OBJ_FLAG_START,},
+    {"flag_state_trickle",     LV_PROPERTY_OBJ_FLAG_STATE_TRICKLE,},
     {"flag_user_1",            LV_PROPERTY_OBJ_FLAG_USER_1,},
     {"flag_user_2",            LV_PROPERTY_OBJ_FLAG_USER_2,},
-    {"flag_user_3",            LV_PROPERTY_OBJ_FLAG_USER_3,},
-    {"flag_user_4",            LV_PROPERTY_OBJ_FLAG_USER_4,},
     {"flag_widget_1",          LV_PROPERTY_OBJ_FLAG_WIDGET_1,},
     {"flag_widget_2",          LV_PROPERTY_OBJ_FLAG_WIDGET_2,},
     {"h",                      LV_PROPERTY_OBJ_H,},

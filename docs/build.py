@@ -14,6 +14,26 @@ Synopsis
     Build Arguments and Clean Arguments can be used one at a time
     or be freely mixed and combined.
 
+Data Flow
+---------
+
+.. code-block:: text
+
+    Inputs              Generated Source Files             Output
+    -----------         ----------------------       ----------------------
+    ./docs/src/   \
+    ./src/         >===> ./docs/intermediate/  ===>  ./docs/build/<format>/
+    ./examples/   /
+
+    Once ./docs/intermediate/ is built, you can use all the Sphinx output
+    formats, e.g.
+
+    - make html
+    - make latex
+    - make man
+    - make htmlhelp
+    - etc.
+
 Description
 -----------
     Copy source files to an intermediate directory and modify them there before
@@ -172,12 +192,10 @@ from datetime import datetime
 
 # LVGL Custom
 import example_list
-import doc_builder
+import api_doc_builder
 import config_builder
-_ = os.path.abspath(os.path.dirname(__file__))
-docs_src_dir = os.path.join(_, 'src')
-sys.path.insert(0, docs_src_dir)
-from lvgl_version import lvgl_version  # NoQA
+from src.lvgl_version import lvgl_version
+from announce import *
 
 # Not Currently Used
 # (Code is kept in case we want to re-implement it later.)
@@ -188,7 +206,8 @@ from lvgl_version import lvgl_version  # NoQA
 # -------------------------------------------------------------------------
 # These are relative paths from the ./docs/ directory.
 cfg_project_dir = '..'
-cfg_src_dir = 'src'
+cfg_lvgl_src_dir = 'src'
+cfg_doc_src_dir = 'src'
 cfg_examples_dir = 'examples'
 cfg_default_intermediate_dir = 'intermediate'
 cfg_default_output_dir = 'build'
@@ -198,15 +217,14 @@ cfg_lv_conf_filename = 'lv_conf.h'
 cfg_lv_version_filename = 'lv_version.h'
 cfg_doxyfile_filename = 'Doxyfile'
 cfg_top_index_filename = 'index.rst'
+cfg_default_branch = 'master'
 
 # Filename generated in `latex_output_dir` and copied to `pdf_output_dir`.
 cfg_pdf_filename = 'LVGL.pdf'
 
 
-# -------------------------------------------------------------------------
-# Print usage note.
-# -------------------------------------------------------------------------
 def print_usage_note():
+    """Print usage note."""
     print('Usage:')
     print('  $ python build.py [optional_arg ...]')
     print()
@@ -224,28 +242,29 @@ def print_usage_note():
 def remove_dir(tgt_dir):
     """Remove directory `tgt_dir`."""
     if os.path.isdir(tgt_dir):
-        print(f'Removing {tgt_dir}...')
+        announce(__file__, f'Removing {tgt_dir}...')
         shutil.rmtree(tgt_dir)
     else:
-        print(f'{tgt_dir} already removed...')
+        announce(__file__, f'{tgt_dir} already removed...')
 
 
-def cmd(s, start_dir=None, exit_on_error=True):
+def cmd(cmd_str, start_dir=None, exit_on_error=True):
     """Run external command and abort build on error."""
-    if start_dir is None:
-        start_dir = os.getcwd()
+    saved_dir = None
 
-    saved_dir = os.getcwd()
-    os.chdir(start_dir)
-    print("")
-    print(s)
-    print("-------------------------------------")
-    result = os.system(s)
-    os.chdir(saved_dir)
+    if start_dir is not None:
+        saved_dir = os.getcwd()
+        os.chdir(start_dir)
 
-    if result != 0 and exit_on_error:
-        print("Exiting build due to previous error.")
-        sys.exit(result)
+    announce(__file__, f'Running [{cmd_str}] in [{os.getcwd()}]...')
+    return_code = os.system(cmd_str)
+
+    if saved_dir is not None:
+        os.chdir(saved_dir)
+
+    if return_code != 0 and exit_on_error:
+        announce(__file__, "Exiting build due to previous error.")
+        sys.exit(1)
 
 
 def intermediate_dir_contents_exists(dir):
@@ -262,9 +281,9 @@ def intermediate_dir_contents_exists(dir):
         c3 = os.path.isdir(temp_path)
         temp_path = os.path.join(dir, '_static')
         c4 = os.path.isdir(temp_path)
-        temp_path = os.path.join(dir, 'details')
+        temp_path = os.path.join(dir, 'debugging')
         c5 = os.path.isdir(temp_path)
-        temp_path = os.path.join(dir, 'intro')
+        temp_path = os.path.join(dir, 'introduction')
         c6 = os.path.isdir(temp_path)
         temp_path = os.path.join(dir, 'contributing')
         c7 = os.path.isdir(temp_path)
@@ -293,7 +312,7 @@ def run(args):
 
     def print_setting(setting_name, val):
         """Print one setting; used for debugging."""
-        print(f'{setting_name:18} = [{val}]')
+        announce(__file__, f'{setting_name:18} = [{val}]')
 
     def print_settings(and_exit):
         """Print all settings and optionally exit; used for debugging."""
@@ -355,13 +374,13 @@ def run(args):
             print(f'Argument [{arg}] not recognized.')
             print()
             print_usage_note()
-            exit(1)
+            exit(2)  # 2 = customary Unix command-line syntax error.
 
     # '-E' option forces Sphinx to rebuild its environment so all docs are
     # fully regenerated, even if not changed.
     # Note:  Sphinx runs in ./docs/, but uses `intermediate_dir` for input.
     if fresh_sphinx_env:
-        print("Force-regenerating all files...")
+        announce(__file__, "Force-regenerating all files...")
         env_opt = '-E'
     else:
         env_opt = ''
@@ -383,7 +402,7 @@ def run(args):
     base_dir = os.path.abspath(os.path.dirname(__file__))
     project_dir = os.path.abspath(os.path.join(base_dir, cfg_project_dir))
     examples_dir = os.path.join(project_dir, cfg_examples_dir)
-    lvgl_src_dir = os.path.join(project_dir, 'src')
+    lvgl_src_dir = os.path.join(project_dir, cfg_lvgl_src_dir)
 
     # Establish intermediate directory.  The presence of environment variable
     # `LVGL_DOC_BUILD_INTERMEDIATE_DIR` overrides default in `cfg_default_intermediate_dir`.
@@ -440,9 +459,9 @@ def run(args):
     # Change to script directory for consistent run-time environment.
     # ---------------------------------------------------------------------
     os.chdir(base_dir)
-    print(f'Intermediate dir:  [{intermediate_dir}]')
-    print(f'Output dir      :  [{output_dir}]')
-    print(f'Running from    :  [{base_dir}]')
+    announce(__file__, f'Intermediate dir:  [{intermediate_dir}]')
+    announce(__file__, f'Output dir      :  [{output_dir}]')
+    announce(__file__, f'Running from    :  [{base_dir}]')
 
     # ---------------------------------------------------------------------
     # Clean?  If so, clean (like `make clean`), but do not exit.
@@ -451,9 +470,7 @@ def run(args):
         or clean_all or (os.path.isdir(intermediate_dir) and build_intermediate)
 
     if some_cleaning_to_be_done:
-        print("****************")
-        print("Cleaning...")
-        print("****************")
+        announce(__file__, "Cleaning...", box=True)
 
         if clean_intermediate:
             remove_dir(intermediate_dir)
@@ -483,7 +500,7 @@ def run(args):
     #       - generated search window
     #       - establishing canonical page for search engines
     #   - `link_roles.py` to generate translation links
-    #   - `doc_builder.py` to generate links to API pages
+    #   - `doxygen_xml.py` to generate links to API pages
     #
     # LVGL_GITCOMMIT is used by:
     #   - `conf.py` => html_context['github_version'] for
@@ -511,8 +528,8 @@ def run(args):
 
     # If above failed (i.e. `branch` not valid), default to 'master'.
     if status != 0:
-        branch = 'master'
-    elif branch == 'master':
+        branch = cfg_default_branch
+    elif branch == cfg_default_branch:
         # Expected in most cases.  Nothing to change.
         pass
     else:
@@ -521,14 +538,13 @@ def run(args):
             branch = branch[8:]
         else:
             # Default to 'master'.
-            branch = 'master'
+            branch = cfg_default_branch
 
     os.environ['LVGL_URLPATH'] = branch
     os.environ['LVGL_GITCOMMIT'] = branch
 
     # ---------------------------------------------------------------------
-    # Copy files to 'intermediate_dir' where they will be edited (translation
-    # link(s) and API links) before being used to generate new docs.
+    # Prep `intermediate_dir` to become the `sphinx-build` source dir.
     # ---------------------------------------------------------------------
     # dirsync `exclude_list` = list of regex patterns to exclude.
     intermediate_re = r'^' + cfg_default_intermediate_dir + r'.*'
@@ -537,9 +553,7 @@ def run(args):
 
     if intermediate_dir_contents_exists(intermediate_dir):
         # We are just doing an update of the intermediate_dir contents.
-        print("****************")
-        print("Updating intermediate directory...")
-        print("****************")
+        announce(__file__, "Updating intermediate directory...", box=True)
 
         exclude_list.append(r'examples.*')
         options = {
@@ -551,23 +565,22 @@ def run(args):
         }
         # action == 'sync' means copy files even when they do not already exist in tgt dir.
         # action == 'update' means DO NOT copy files when they do not already exist in tgt dir.
-        dirsync.sync(cfg_src_dir, intermediate_dir, 'sync', **options)
+        dirsync.sync(cfg_doc_src_dir, intermediate_dir, 'sync', **options)
         dirsync.sync(examples_dir, os.path.join(intermediate_dir, cfg_examples_dir), 'sync', **options)
     elif build_intermediate or build_html or build_latex:
         # We are having to create the intermediate_dir contents by copying.
-        print("****************")
-        print("Building intermediate directory...")
-        print("****************")
+        announce(__file__, "Building intermediate directory...", box=True)
 
+        t1 = datetime.now()
         copy_method = 1
 
         # Both of these methods work.
         if copy_method == 0:
             # --------- Method 0:
             ignore_func = shutil.ignore_patterns('tmp*', 'output*')
-            print('Copying docs...')
-            shutil.copytree(cfg_src_dir, intermediate_dir, ignore=ignore_func, dirs_exist_ok=True)
-            print('Copying examples...')
+            announce(__file__, 'Copying docs...')
+            shutil.copytree(cfg_doc_src_dir, intermediate_dir, ignore=ignore_func, dirs_exist_ok=True)
+            announce(__file__, 'Copying examples...')
             shutil.copytree(examples_dir, os.path.join(intermediate_dir, cfg_examples_dir), dirs_exist_ok=True)
         else:
             # --------- Method 1:
@@ -577,37 +590,27 @@ def run(args):
             }
             # action == 'sync' means copy files even when they do not already exist in tgt dir.
             # action == 'update' means DO NOT copy files when they do not already exist in tgt dir.
-            print('Copying docs...')
-            dirsync.sync(cfg_src_dir, intermediate_dir, 'sync', **options)
-            print('Copying examples...')
+            announce(__file__, 'Copying docs...')
+            dirsync.sync(cfg_doc_src_dir, intermediate_dir, 'sync', **options)
+            announce(__file__, 'Copying examples...')
             dirsync.sync(examples_dir, os.path.join(intermediate_dir, cfg_examples_dir), 'sync', **options)
 
         # -----------------------------------------------------------------
-        # Build Example docs, Doxygen output, API docs, and API links.
+        # Build <intermediate_dir>/lv_conf.h from lv_conf_template.h.
         # -----------------------------------------------------------------
-        t1 = datetime.now()
-
-        # Build <intermediate_dir>/lv_conf.h from lv_conf_template.h for this build only.
         config_builder.run(lv_conf_file)
 
+        # -----------------------------------------------------------------
         # Copy `lv_version.h` into intermediate directory.
+        # -----------------------------------------------------------------
         shutil.copyfile(version_src_file, version_dst_file)
-
-        # Replace tokens in Doxyfile in 'intermediate_dir' with data from this run.
-        with open(doxyfile_src_file, 'rb') as f:
-            data = f.read().decode('utf-8')
-
-        data = data.replace('<<LV_CONF_PATH>>', lv_conf_file)
-        data = data.replace('<<SRC>>', f'"{lvgl_src_dir}"')
-
-        with open(doxyfile_dst_file, 'wb') as f:
-            f.write(data.encode('utf-8'))
 
         # -----------------------------------------------------------------
         # Generate examples pages.  Include sub-pages pages that get included
         # in individual documents where applicable.
         # -----------------------------------------------------------------
-        print("Generating examples...")
+        announce(__file__, "Generating examples...")
+        example_list.make_warnings_into_errors()
         example_list.exec(intermediate_dir)
 
         # -----------------------------------------------------------------
@@ -617,68 +620,54 @@ def run(args):
         # -----------------------------------------------------------------
         # Original code:
         # if True:
-        #     print("Skipping adding translation links.")
+        #     announce(__file__, "Skipping adding translation links.")
         # else:
-        #     print("Adding translation links...")
+        #     announce(__file__, "Adding translation links...")
         #     add_translation.exec(intermediate_dir)
 
-        # ---------------------------------------------------------------------
-        # Generate API pages and links thereto.
-        # ---------------------------------------------------------------------
         if skip_api:
-            print("Skipping API generation as requested.")
+            announce(__file__, "Skipping API generation as requested.")
         else:
-            print("Running Doxygen...")
-            cmd('doxygen Doxyfile', intermediate_dir)
+            # -------------------------------------------------------------
+            # Generate API pages and links thereto.
+            # -------------------------------------------------------------
+            announce(__file__, "API page and link processing...")
+            api_doc_builder.EMIT_WARNINGS = False
 
-            print("API page and link processing...")
-            doc_builder.EMIT_WARNINGS = False
-
-            # Create .RST files for API pages, plus
-            # add API hyperlinks to .RST files in the directories in passed array.
-            doc_builder.run(
-                project_dir,
-                intermediate_dir,
-                os.path.join(intermediate_dir, 'intro'),
-                os.path.join(intermediate_dir, 'details'),
-                os.path.join(intermediate_dir, 'details', 'common-widget-features'),
-                os.path.join(intermediate_dir, 'details', 'common-widget-features', 'layouts'),
-                os.path.join(intermediate_dir, 'details', 'common-widget-features', 'styles'),
-                os.path.join(intermediate_dir, 'details', 'debugging'),
-                os.path.join(intermediate_dir, 'details', 'integration'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'adding-lvgl-to-your-project'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'bindings'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'building'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'chip'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'driver'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'driver', 'display'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'driver', 'touchpad'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'framework'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'ide'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'os'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'os', 'yocto'),
-                os.path.join(intermediate_dir, 'details', 'integration', 'renderers'),
-                os.path.join(intermediate_dir, 'details', 'libs'),
-                os.path.join(intermediate_dir, 'details', 'main-modules'),
-                # Note:  details/main-modules/display omitted intentionally,
-                # since API links for those .RST files have been added manually.
-                os.path.join(intermediate_dir, 'details', 'auxiliary-modules'),
-                os.path.join(intermediate_dir, 'details', 'widgets')
-            )
+            # api_doc_builder.run() => doxy_xml_parser.DoxygenXml() now:
+            # - preps and runs Doxygen generating XML,
+            # - loads generated XML.
+            # Then api_doc_builder.run():
+            # - creates .RST files for API pages, and
+            # - adds API hyperlinks to .RST files in the directories in passed array.
+            api_doc_builder.build_api_docs(lvgl_src_dir,
+                                           intermediate_dir,
+                                           doxyfile_src_file,
+                                           'auxiliary-modules',
+                                           'common-widget-features',
+                                           'contributing',
+                                           'debugging',
+                                           'getting_started',
+                                           'guides',
+                                           'integration',
+                                           'introduction',
+                                           'libs',
+                                           'main-modules',
+                                           'widgets',
+                                           'xml',
+                                           )
 
         t2 = datetime.now()
-        print('Example/API run time:  ' + str(t2 - t1))
+        announce(__file__, 'Example/API run time:  ' + str(t2 - t1))
 
     # ---------------------------------------------------------------------
     # Build PDF
     # ---------------------------------------------------------------------
     if not build_latex:
-        print("Skipping Latex build.")
+        announce(__file__, "Skipping Latex build.")
     else:
         t1 = datetime.now()
-        print("****************")
-        print("Building Latex output...")
-        print("****************")
+        announce(__file__, "Building Latex output...", box=True)
 
         # If PDF link is present in top index.rst, remove it so PDF
         # does not have a link to itself.
@@ -694,16 +683,18 @@ def run(args):
         src = intermediate_dir
         dst = output_dir
         cpu = os.cpu_count()
-        # As of 22-Feb-2025, sadly the -D version=xxx is not working as documented.
-        # So the version strings applicable to Latex/PDF/man pages/texinfo
-        # formats are assembled by `conf.py`.
-        cmd_line = f'sphinx-build -M latex "{src}" "{dst}" -j {cpu}'
+
+        # The -D option correctly replaces (overrides) configuration attribute
+        # values in the `conf.py` module.  Since `conf.py` now correctly
+        # computes its own `version` value, we don't have to override it here
+        # with a -D options.  If it should need to be used in the future,
+        # the value after the '=' MUST NOT have quotation marks around it
+        # or it won't work.  Correct usage:  f'-D version={ver}' .
+        cmd_line = f'sphinx-build -M latex "{src}" "{dst}" -j {cpu} --fail-on-warning --keep-going'
         cmd(cmd_line)
 
         # Generate PDF.
-        print("****************")
-        print("Building PDF...")
-        print("****************")
+        announce(__file__, "Building PDF...", box=True)
         cmd_line = 'latexmk -pdf "LVGL.tex"'
         cmd(cmd_line, latex_output_dir, False)
 
@@ -713,19 +704,17 @@ def run(args):
 
         shutil.move(pdf_src_file, pdf_dst_file)
         t2 = datetime.now()
-        print('PDF           :  ' + pdf_dst_file)
-        print('Latex gen time:  ' + str(t2 - t1))
+        announce(__file__, 'PDF           :  ' + pdf_dst_file)
+        announce(__file__, 'Latex gen time:  ' + str(t2 - t1))
 
     # ---------------------------------------------------------------------
     # Build HTML
     # ---------------------------------------------------------------------
     if not build_html:
-        print("Skipping HTML build.")
+        announce(__file__, "Skipping HTML build.")
     else:
         t1 = datetime.now()
-        print("****************")
-        print("Building HTML output...")
-        print("****************")
+        announce(__file__, "Building HTML output...", box=True)
 
         # If PDF is present in build directory, copy it to
         # intermediate directory for use by HTML build.
@@ -764,22 +753,36 @@ def run(args):
         src = intermediate_dir
         dst = output_dir
         cpu = os.cpu_count()
-        # As of 22-Feb-2025, sadly the -D version=xxx is not working as documented.
-        # So the version strings applicable to Latex/PDF/man pages/texinfo
-        # formats are assembled by `conf.py`.  The -D option in the command
-        # line may go away if it does not, in fact, create some impact on
-        # the doc-gen process.
-        cmd_line = f'sphinx-build -M html "{src}" "{dst}" -D version="{ver}" {env_opt} -j {cpu}'
-        cmd(cmd_line)
+
+        debugging_breathe = 0
+        if debugging_breathe:
+            from sphinx.cmd.build import main as sphinx_build
+            # Don't allow parallel processing while debugging (the '-j' arg is removed).
+            sphinx_args = ['-M', 'html', f'{src}', f'{dst}']
+
+            if len(env_opt) > 0:
+                sphinx_args.append(f'{env_opt}')
+
+            sphinx_build(sphinx_args)
+        else:
+            # The -D option correctly replaces (overrides) configuration attribute
+            # values in the `conf.py` module.  Since `conf.py` now correctly
+            # computes its own `version` value, we don't have to override it here
+            # with a -D options.  If it should need to be used in the future,
+            # the value after the '=' MUST NOT have quotation marks around it
+            # or it won't work.  Correct usage:  f'-D version={ver}' .
+            cmd_line = f'sphinx-build -M html "{src}" "{dst}" -j {cpu} {env_opt} --fail-on-warning --keep-going'
+            cmd(cmd_line)
+
         t2 = datetime.now()
-        print('HTML gen time :  ' + str(t2 - t1))
+        announce(__file__, 'HTML gen time :  ' + str(t2 - t1))
 
     # ---------------------------------------------------------------------
     # Indicate results.
     # ---------------------------------------------------------------------
     t_end = datetime.now()
-    print('Total run time:  ' + str(t_end - t0))
-    print('Done.')
+    announce(__file__, 'Total run time:  ' + str(t_end - t0))
+    announce(__file__, 'Done.')
 
 
 if __name__ == '__main__':
